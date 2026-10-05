@@ -1,0 +1,35 @@
+# Use with docker-compose.yml; cloudflared runs on the Debian host.
+services:
+  backend:
+    user: node
+    shm_size: 256m
+    environment:
+      APP_ENV: production
+      APP_ORIGIN: ${APP_ORIGIN:?Set APP_ORIGIN to the public https:// hostname}
+      COOKIE_SECURE: "true"
+      REGISTRATION_ENABLED: "false"
+      TRUST_PROXY: "true"
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+  frontend:
+    read_only: true
+    environment:
+      APP_ENV: production
+      TRUST_CLOUDFLARE_PROXY: "true"
+    user: node
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

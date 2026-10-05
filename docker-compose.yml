@@ -1,0 +1,59 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      APP_ORIGIN: ${APP_ORIGIN:-}
+      REGISTRATION_ENABLED: ${REGISTRATION_ENABLED:-true}
+      TRUST_PROXY: "true"
+      DATABASE_PATH: /app/data/invoices.sqlite
+      BACKUP_DIR: /app/backups
+      BACKUP_RETENTION: ${BACKUP_RETENTION:-14}
+      BACKUP_STATUS_OWNER_EMAIL: ${BACKUP_STATUS_OWNER_EMAIL:-}
+      BACKUP_SECONDARY_DIR: ${BACKUP_SECONDARY_DIR:-}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_SECURE: ${SMTP_SECURE:-false}
+      SMTP_REQUIRE_TLS: ${SMTP_REQUIRE_TLS:-true}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      MAIL_FROM: ${MAIL_FROM:-}
+    volumes:
+      - invoice-data:/app/data
+      - ${BACKUP_HOST_DIR:-./backups/automatic}:/app/backups
+      - ${BACKUP_SECONDARY_HOST_DIR:-./backups/secondary}:/app/secondary-backups
+    restart: unless-stopped
+    init: true
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "127.0.0.1:5173:80"
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      TRUST_CLOUDFLARE_PROXY: ${TRUST_CLOUDFLARE_PROXY:-false}
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    init: true
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
+volumes:
+  invoice-data:
