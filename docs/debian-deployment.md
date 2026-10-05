@@ -87,10 +87,10 @@ dc run --rm --no-deps --user root --cap-add DAC_OVERRIDE --entrypoint node backe
 
 The import checks the manifest/file hash, invoice hash, table counts, SQLite integrity and foreign keys. It installs the verified copy exclusively and refuses to replace an existing database or WAL/SHM sidecars. If it reports an existing destination, stop and inspect that volume; do not delete it to silence the error. Import is for first startup into an empty destination, not an online restore or merge.
 
-The one-time root operator commands explicitly grant the capabilities needed to read the private input and set ownership; application containers keep all capabilities dropped. Apply private permissions and the container Node user's ownership to the imported database and writable directories:
+The one-time root operator commands explicitly grant the capabilities needed to read the private input, set ownership and apply permissions; application containers keep all capabilities dropped. Apply private permissions and the container Node user's ownership to the imported database and writable directories:
 
 ```sh
-dc run --rm --no-deps --user root --cap-add CHOWN --cap-add DAC_OVERRIDE --entrypoint sh backend -c \
+dc run --rm --no-deps --user root --cap-add CHOWN --cap-add DAC_OVERRIDE --cap-add FOWNER --entrypoint sh backend -c \
   'chown 1000:1000 /app/data /app/data/invoices.sqlite /app/backups /app/secondary-backups && chmod 700 /app/data /app/backups /app/secondary-backups && chmod 600 /app/data/invoices.sqlite'
 dc up -d
 dc ps
